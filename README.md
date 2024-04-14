@@ -14,7 +14,8 @@ $$C^0(G,\mathcal{F}) = \bigoplus_{v \in V} \mathcal{F}_v$$
 $$C^1(G,\mathcal{F}) = \bigoplus_{e \in E} \mathcal{F}_e$$
 
 The block matrix collecting all the linear maps according to a fixed oriented incidency is called the coboundary map $\delta$: the sheaf laplacian can be derived from the coboundary map similarly to how we derive the graph laplacian from the incidency matrix: 
-$$ L_{\mathcal{F}} = \delta^Tdelta $$
+
+$$ L_{\mathcal{F}} = \delta^T \delta $$
 
 This laplacian encodes both for the linear maps between the stalks and for the sparsity for the underlying graph. Its spectral properties allows for a generalization of the tools of graph signal processing and even more, under proper definitions, for generalizations in higher order topologies (simplicial complexes, cell complexes). 
 
