@@ -9,7 +9,7 @@ Considering a graph $G(V,E)$, a cellular sheaf $\mathcal{F}$ on a graph is made 
 
 The most obvious vectorial spaces to derive from this definition are the so called space of cochains: they result from a direct sum of the spaces defined over the nodes and the edges respectively, so that an element belonging to a space of cochain is just the stack of the signals defined over all the nodes or the edges:
 
-\begin{gather}  
+\begin{center}  
   C^0(G,\mathcal{F}) = \bigoplus_{v \in V} \mathcal{F}_v \\ \nonumber
   C^1(G,\mathcal{F}) = \bigoplus_{e \in E} \mathcal{F}_e \\
-\end{gather}
+\end{center}
