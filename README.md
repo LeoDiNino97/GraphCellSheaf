@@ -12,6 +12,7 @@ The most obvious vectorial spaces to derive from this definition are the so call
 \begin{equation}  
   C^0(G,\mathcal{F}) = \bigoplus_{v \in V} \mathcal{F}_v \\ \nonumber
 \end{equation}
+
 \begin{equation}
   C^1(G,\mathcal{F}) = \bigoplus_{e \in E} \mathcal{F}_e \\
 \end{equation}
