@@ -106,7 +106,6 @@ def gradient_descent_U(
         F_u_k:np.array,
         F_v_0:np.array,
         F_v_k:np.array,
-        F_v:np.array,
         L_uu:np.array,
         L_uv:np.array,
         BB_uu:np.array,
@@ -140,7 +139,6 @@ def gradient_descent_V(
         F_u_k:np.array,
         F_v_0:np.array,
         F_v_k:np.array,
-        F_v:np.array,
         L_uv:np.array,
         L_vv:np.array,
         BB_uv:np.array,
@@ -177,7 +175,7 @@ def local_to_global(
         ) -> np.array:
     
     E = len(list(combinations(range(V),2)))
-    B_e = np.zeros(d*E, d*V)
+    B_e = np.zeros((d*E, d*V))
 
     u = e[0]
     v = e[1]
@@ -208,7 +206,7 @@ def global_update_L(
 
     # Computing the eigenvalues of the proximal operator
 
-    z = 0.5*(s + np.sqrt*(s**2 + 4*lambda_/(rho*E)))
+    z = 0.5*(s + np.sqrt(s**2 + 4*lambda_/(rho*E)))
 
     # Rebuilding the proximal operator
 

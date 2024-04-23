@@ -1,5 +1,6 @@
 import numpy as np
 import optimization_utils as opt
+from tqdm import tqdm
 
 def learning(
         V:int,
@@ -45,13 +46,14 @@ def learning(
             'M_uv': np.eye(d),
             'M_vv': np.eye(d)
         }
+        for e in edges
     }
 
     # Initialization of the shared multiplier
 
     M = np.eye(V*d)
 
-    for _ in max_iter:
+    for _ in tqdm(range(max_iter)):
 
         # Initializing the central aggregator
 
@@ -121,8 +123,8 @@ def learning(
         for e in edges:
             buffer_B[e] = opt.global_to_local(d, e, L, BB_, M)
 
-    # We provide in output all the computed restriction maps 
-    
+    # We provide as output all the computed restriction maps 
+
     return buffer_A
 
 
