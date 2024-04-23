@@ -67,6 +67,11 @@ def local_inexact_SCA(
         t:int
         ) -> tuple:
     
+    # Initialization
+
+    F_u = F_u_0
+    F_v = F_v_0
+
     for _ in range(T):
 
         # Calling inexact solvers
@@ -194,12 +199,12 @@ def global_update_L(
         rho:float,
         E:int,
         BB:np.array,
-        u:np.array
+        M:np.array
         ) -> np.array:
     
     # Computing the eigendecomposition of the term to be proximalized
 
-    s, U = np.linalg.eig(BB + u)
+    s, U = np.linalg.eig(BB + M)
 
     # Computing the eigenvalues of the proximal operator
 
