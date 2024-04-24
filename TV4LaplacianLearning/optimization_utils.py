@@ -54,7 +54,7 @@ def edges_map(
 #________________________________LOCAL UPDATE_______________________________________
 #___________________________________________________________________________________
 
-def local_inexact_SCA(
+def local_proxies(
         X_u:np.array,
         X_v:np.array,
         F_u_0:np.array,
@@ -72,13 +72,11 @@ def local_inexact_SCA(
         M_vv:np.array,
         rho:float,
         LR:float,
-        gamma:float,
-        T:int,
         t:int
         ) -> tuple:
     
     '''
-    Inexact successive convex approximation to optimize the local restriction maps
+    Optimize the local restriction maps
     on a certain edge calling a subroutine performing a gradient based procedure. 
 
     Parameters:
@@ -99,42 +97,25 @@ def local_inexact_SCA(
     - M_vv (np.array): (v,v) block in the shared multiplier 
     - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
     - LR (float): learning rate for the inner gradient descent subroutine
-    - gamma (float): convex smoothing parameter for the outer SCA routine
-    - T (int): max number of iterations for outer routine (SCA)
     - t (int): max number of iterations for inner routine (gradient based)
 
     Returns:
     - tuple: A tuple containing the two restriction maps on the edge of interest    
     '''
 
-    # Initialization
-
-    F_u = F_u_0
-    F_v = F_v_0
-
-    for _ in range(T):
-
-        # Calling inexact solvers
-
-        F_u_hat = gradient_descent_U(X_u, X_v, 
-                                     F_u, F_u_k, F_v, F_v_k, 
-                                     L_uu, L_uv, 
-                                     BB_uu, BB_uv, 
-                                     M_uu, M_uv,
-                                     rho, LR, t)
-        
-        F_v_hat = gradient_descent_V(X_u, X_v, 
-                                     F_u, F_u_k, F_v, F_v_k, 
-                                     L_uv, L_vv, 
-                                     BB_uv, BB_vv, 
-                                     M_uv, M_vv,
-                                     rho, LR, t)
-
-        # Convex smoothing
-        F_u = F_u + gamma*(F_u_hat - F_u)
-        F_v = F_v + gamma*(F_v_hat - F_v)
-
-        gamma *= 0.9
+    F_u = gradient_descent_U(X_u, X_v, 
+                             F_u_0, F_u_k, F_v_0, F_v_k, 
+                             L_uu, L_uv, 
+                             BB_uu, BB_uv, 
+                             M_uu, M_uv,
+                             rho, LR, t)
+    
+    F_v = gradient_descent_V(X_u, X_v, 
+                             F_u_0, F_u_k, F_v_0, F_v_k, 
+                             L_uv, L_vv, 
+                             BB_uv, BB_vv, 
+                             M_uv, M_vv,
+                             rho, LR, t)
 
     return (F_u, F_v)
 
@@ -249,7 +230,7 @@ def gradient_descent_V(
     F_u = F_u_0
     F_v = F_v_0
 
-    # This quantities in the gradients of the block losses are fixed
+    # These quantities in the gradients of the block losses are fixed
 
     l_vv = - F_v_k.T @ F_v_k + BB_vv - L_vv + M_vv
     l_uv = + F_u_k.T @ F_v_k + BB_uv - L_uv + M_uv
@@ -404,6 +385,7 @@ def global_to_local(
     M_vv = M[v*d:(v+1)*d,v*d:(v+1)*d]
 
     # Mapping the block to be sent
+
     D = {
         'BB_uu':BB_uu,
         'BB_uv':BB_uv,

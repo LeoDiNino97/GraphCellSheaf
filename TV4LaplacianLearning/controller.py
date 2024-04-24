@@ -9,8 +9,6 @@ def learning(
         LR:np.array,
         rho:float,
         lambda_:float,
-        gamma:float,
-        T:int,
         t:int,
         max_iter:int
     ):
@@ -62,6 +60,7 @@ def learning(
         # Inner loop for the local updates
 
         for e in edges:
+            
             u = e[0]
             v = e[1]
 
@@ -96,14 +95,13 @@ def learning(
 
             # Restriction maps learning
 
-            F_u, F_v = opt.local_inexact_SCA(X_u, X_v,
-                                            F_u_0, F_u_k,
-                                            F_v_0, F_v_k,
-                                            L_uu, L_uv, L_vv,
-                                            BB_uu, BB_uv, BB_vv,
-                                            M_uu, M_uv, M_vv,
-                                            rho, LR, gamma,
-                                            T, t)
+            F_u, F_v = opt.local_proxies(X_u, X_v,
+                                         F_u_0, F_u_k,
+                                         F_v_0, F_v_k,
+                                         L_uu, L_uv, L_vv,
+                                         BB_uu, BB_uv, BB_vv,
+                                         M_uu, M_uv, M_vv,
+                                         rho, LR, t)
 
             # Update local buffer
             buffer_A[e][u] = F_u
