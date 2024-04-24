@@ -371,8 +371,8 @@ def global_to_local(
         ) -> dict:
     
     '''
-    Gradient based procedure on block F_v in the local optimization step. 
-
+    Messaging between central aggregator and local agents.
+    
     Parameters:
     - d (int): stalks dimension
     - edge (tuple): edge to which the global-to-local is directioned
