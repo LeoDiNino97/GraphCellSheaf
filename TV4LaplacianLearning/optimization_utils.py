@@ -78,7 +78,7 @@ def local_inexact_SCA(
         ) -> tuple:
     
     '''
-    This routine performs an inexact successive convex approximation to optimize the local restriction maps
+    Inexact successive convex approximation to optimize the local restriction maps
     on a certain edge calling a subroutine performing a gradient based procedure. 
 
     Parameters:
@@ -158,7 +158,7 @@ def gradient_descent_U(
         ) -> np.array:
     
     '''
-    This subroutine performs the gradient based procedure on block F_u in the local optimization step. 
+    Gradient based procedure on block F_u in the local optimization step. 
 
     Parameters:
     - X_u (np.array): Signals on node u 
@@ -180,7 +180,7 @@ def gradient_descent_U(
     Returns:
     - np.array: The restriction map F_u  
     '''    
-    
+
     # External initialization 
 
     F_u = F_u_0
@@ -221,7 +221,7 @@ def gradient_descent_V(
         ) -> np.array:
     
     '''
-    This subroutine performs the gradient based procedure on block F_v in the local optimization step. 
+    Gradient based procedure on block F_v in the local optimization step. 
 
     Parameters:
     - X_u (np.array): Signals on node u 
@@ -276,7 +276,7 @@ def local_to_global(
         ) -> np.array:
     
     '''
-    This subroutine performs the message passing from the local agents to the central aggregator 
+    Message passing from the local agents to the central aggregator 
 
     Parameters:
     - F_u (np.array): Restriction map F_u
@@ -316,6 +316,20 @@ def global_update_L(
         M:np.array
         ) -> np.array:
     
+    '''
+    Global update of the estimated laplacian through a proximal mapping
+
+    Parameter:
+    - lambda_ (float): Penalization factor
+    - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
+    - E (int): total number of edges
+    - BB (np.array): aggregator of local-to-central messages
+    - M (np.array): shared multiplier
+
+    Returns:
+    - np.array: globally updated sheaf laplacian
+    '''
+
     # Computing the eigendecomposition of the term to be proximalized
 
     s, U = np.linalg.eig(BB + M)
@@ -335,7 +349,17 @@ def global_update_M(
         BB:np.array,
         L:np.array
         ) -> np.array:
-    
+    '''
+    Global update of the shared multiplier
+
+    Parameter:
+    - M (np.array): shared multiplier
+    - BB (np.array): aggregator of local-to-central messages
+    - L (np.array): current estimate of the global variable for the laplacian
+
+    Returns:
+    - np.array: globally updated multiplier
+    '''
     return M + BB - L 
 
 def global_to_local(
@@ -346,6 +370,20 @@ def global_to_local(
         M:np.array
         ) -> dict:
     
+    '''
+    Gradient based procedure on block F_v in the local optimization step. 
+
+    Parameters:
+    - d (int): stalks dimension
+    - edge (tuple): edge to which the global-to-local is directioned
+    - M (np.array): current estimate of the shared multiplier
+    - BB (np.array): current aggregator of local-to-central messages
+    - L (np.array): current estimate of the global variable for the laplacian
+
+    Returns:
+    - dict: Dictionary containing all the global-to-local messages
+    '''    
+
     u = edge[0]
     v = edge[1]
 
