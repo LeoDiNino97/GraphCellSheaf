@@ -112,7 +112,7 @@ def learning(
             BB_ += opt.local_to_global(F_u, F_v, e, d, V, edges_dict)
 
         # Central updates
-
+        BB_ /= E
         L = opt.global_update_L(lambda_, rho, E, BB_, M)
         M = opt.global_update_M(M, BB_, L)
 

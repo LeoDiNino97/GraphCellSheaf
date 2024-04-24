@@ -280,7 +280,7 @@ def local_to_global(
     id = edges_dict[e]
 
     B_e[id*d:(id+1)*d, u*d:(u+1)*d] = F_u
-    B_e[id*d:(id+1)*d, v*d:(v+1)*d] = F_v
+    B_e[id*d:(id+1)*d, v*d:(v+1)*d] = - F_v
 
     return B_e.T @ B_e
 
