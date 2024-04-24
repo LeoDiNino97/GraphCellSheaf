@@ -349,6 +349,7 @@ def global_update_M(
         BB:np.array,
         L:np.array
         ) -> np.array:
+    
     '''
     Global update of the shared multiplier
 
@@ -360,6 +361,7 @@ def global_update_M(
     Returns:
     - np.array: globally updated multiplier
     '''
+
     return M + BB - L 
 
 def global_to_local(
@@ -372,7 +374,7 @@ def global_to_local(
     
     '''
     Messaging between central aggregator and local agents.
-    
+
     Parameters:
     - d (int): stalks dimension
     - edge (tuple): edge to which the global-to-local is directioned
@@ -387,7 +389,7 @@ def global_to_local(
     u = edge[0]
     v = edge[1]
 
-    # Defining the block to be sent for the message passing 
+    # Defining the blocks to be sent for the message passing 
 
     BB_uu = BB[u*d:(u+1)*d,u*d:(u+1)*d]
     BB_uv = BB[u*d:(u+1)*d,v*d:(v+1)*d]
