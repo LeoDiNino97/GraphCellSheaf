@@ -31,6 +31,16 @@ def edges_map(
         V:int
         ) -> dict:
     
+    '''
+    Initialize a dictionary with all the possible edges between V nodes.
+
+    Parameters:
+    - V (int): The number of nodes.
+
+    Returns:
+    - dict: A dictionary containing the edges and a progressive integer as identifier.    
+    '''
+
     all_edges = list(combinations(range(V),2))
 
     edges_dict = {
@@ -67,6 +77,36 @@ def local_inexact_SCA(
         t:int
         ) -> tuple:
     
+    '''
+    This routine performs an inexact successive convex approximation to optimize the local restriction maps
+    on a certain edge calling a subroutine performing a gradient based procedure. 
+
+    Parameters:
+    - X_u (np.array): Signals on node u 
+    - X_v (np.array): Signals on node v
+    - F_u_0 (np.array): Initialization for map F_u
+    - F_u_k (np.array): Buffered previous iteration result for F_u
+    - F_v_0 (np.array): Initialization for map F_v
+    - F_v_k (np.array): Buffered previous iteration result for F_u
+    - L_uu (np.array): (u,u) block in the global variable for the sheaf laplacian 
+    - L_uv (np.array): (u,v) block in the global variable for the sheaf laplacian
+    - L_vv (np.array): (v,v) block in the global variable for the sheaf laplacian
+    - BB_uu (np.array): (u,u) block in the global aggregator for local to global messages
+    - BB_uv (np.array): (u,v) block in the global aggregator for local to global messages
+    - BB_vv (np.array): (v,v) block in the global aggregator for local to global messages 
+    - M_uu (np.array): (u,u) block in the shared multiplier 
+    - M_uv (np.array): (u,v) block in the shared multiplier  
+    - M_vv (np.array): (v,v) block in the shared multiplier 
+    - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
+    - LR (float): learning rate for the inner gradient descent subroutine
+    - gamma (float): convex smoothing parameter for the outer SCA routine
+    - T (int): max number of iterations for outer routine (SCA)
+    - t (int): max number of iterations for inner routine (gradient based)
+
+    Returns:
+    - tuple: A tuple containing the two restriction maps on the edge of interest    
+    '''
+
     # Initialization
 
     F_u = F_u_0
@@ -77,14 +117,14 @@ def local_inexact_SCA(
         # Calling inexact solvers
 
         F_u_hat = gradient_descent_U(X_u, X_v, 
-                                     F_u_0, F_u_k, F_v_0, F_v_k, 
+                                     F_u, F_u_k, F_v, F_v_k, 
                                      L_uu, L_uv, 
                                      BB_uu, BB_uv, 
                                      M_uu, M_uv,
                                      rho, LR, t)
         
         F_v_hat = gradient_descent_V(X_u, X_v, 
-                                     F_u_0, F_u_k, F_v_0, F_v_k, 
+                                     F_u, F_u_k, F_v, F_v_k, 
                                      L_uv, L_vv, 
                                      BB_uv, BB_vv, 
                                      M_uv, M_vv,
@@ -117,8 +157,37 @@ def gradient_descent_U(
         t:int
         ) -> np.array:
     
+    '''
+    This subroutine performs the gradient based procedure on block F_u in the local optimization step. 
+
+    Parameters:
+    - X_u (np.array): Signals on node u 
+    - X_v (np.array): Signals on node v
+    - F_u_0 (np.array): Initialization for map F_u
+    - F_u_k (np.array): Buffered previous iteration result for F_u
+    - F_v_0 (np.array): Initialization for map F_v
+    - F_v_k (np.array): Buffered previous iteration result for F_u
+    - L_uu (np.array): (u,u) block in the global variable for the sheaf laplacian 
+    - L_uv (np.array): (u,v) block in the global variable for the sheaf laplacian
+    - BB_uu (np.array): (u,u) block in the global aggregator for local to global messages
+    - BB_uv (np.array): (u,v) block in the global aggregator for local to global messages
+    - M_uu (np.array): (u,u) block in the shared multiplier 
+    - M_uv (np.array): (u,v) block in the shared multiplier  
+    - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
+    - LR (float): learning rate for the inner gradient descent subroutine
+    - t (int): max number of iterations for inner routine (gradient based)
+
+    Returns:
+    - np.array: The restriction map F_u  
+    '''    
+    
+    # External initialization 
+
     F_u = F_u_0
     F_v = F_v_0
+
+    # This quantities in the gradients of the block losses are fixed
+     
     l_uu = - F_u_k.T @ F_u_k + BB_uu - L_uu + M_uu
     l_uv = + F_u_k.T @ F_v_k + BB_uv - L_uv + M_uv
 
@@ -126,7 +195,8 @@ def gradient_descent_U(
         l_uu_ = F_u.T @ F_u + l_uu
         l_uv_ = - F_u.T @ F_v + l_uv
 
-        grad_u = (F_u @ X_u - F_v @ X_v) @ X_u.T + rho * (F_u @ l_uu_ - 2*F_v @ l_uv_) 
+        grad_u = ( (F_u @ X_u - F_v @ X_v) @ X_u.T               # Gradient of the loss on the local communication
+                  + rho * (F_u @ l_uu_ - 2*F_v @ l_uv_) )        # Gradient of the block-wise losses
 
         F_u -= LR * grad_u
 
@@ -150,8 +220,37 @@ def gradient_descent_V(
         t:int
         ) -> np.array:
     
+    '''
+    This subroutine performs the gradient based procedure on block F_v in the local optimization step. 
+
+    Parameters:
+    - X_u (np.array): Signals on node u 
+    - X_v (np.array): Signals on node v
+    - F_u_0 (np.array): Initialization for map F_u
+    - F_u_k (np.array): Buffered previous iteration result for F_u
+    - F_v_0 (np.array): Initialization for map F_v
+    - F_v_k (np.array): Buffered previous iteration result for F_u
+    - L_uv (np.array): (u,v) block in the global variable for the sheaf laplacian 
+    - L_vv (np.array): (v,v) block in the global variable for the sheaf laplacian
+    - BB_uv (np.array): (u,v) block in the global aggregator for local to global messages
+    - BB_vv (np.array): (v,v) block in the global aggregator for local to global messages
+    - M_uv (np.array): (u,v) block in the shared multiplier 
+    - M_vv (np.array): (v,v) block in the shared multiplier  
+    - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
+    - LR (float): learning rate for the inner gradient descent subroutine
+    - t (int): max number of iterations for inner routine (gradient based)
+
+    Returns:
+    - np.array: The restriction map F_v
+    '''    
+
+    # External initializations
+
     F_u = F_u_0
     F_v = F_v_0
+
+    # This quantities in the gradients of the block losses are fixed
+
     l_vv = - F_v_k.T @ F_v_k + BB_vv - L_vv + M_vv
     l_uv = + F_u_k.T @ F_v_k + BB_uv - L_uv + M_uv
 
@@ -159,7 +258,9 @@ def gradient_descent_V(
         l_vv_ = F_v.T @ F_v + l_vv
         l_uv_ = - F_u.T @ F_v + l_uv
 
-        grad_v = - (F_u @ X_u - F_v @ X_v) @ X_v.T + rho * (F_v @ l_vv_ - 2*F_u @ l_uv_) 
+        grad_v = ( - (F_u @ X_u - F_v @ X_v) @ X_v.T       # Gradient of the loss on the local communication
+                  + rho * (F_v @ l_vv_ - 2*F_u @ l_uv_) )  # Gradient of the block-wise losses
+                                                           
 
         F_v -= LR * grad_v
 
@@ -174,6 +275,21 @@ def local_to_global(
         edges_dict:dict
         ) -> np.array:
     
+    '''
+    This subroutine performs the message passing from the local agents to the central aggregator 
+
+    Parameters:
+    - F_u (np.array): Restriction map F_u
+    - F_v (np.array): Restriction map F_v
+    - e (tuple): The edge where (u,v) are incident on
+    - d (int): Dimension of the vertices stalks
+    - V (int): Number of vertices
+    - edges_dict (dict): Dictionary containing the identifiers for the edges
+
+    Returns:
+    - np.array: The local-to-global message
+    '''        
+
     E = len(list(combinations(range(V),2)))
     B_e = np.zeros((d*E, d*V))
 
