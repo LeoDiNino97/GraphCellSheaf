@@ -72,12 +72,12 @@ def local_proxies(
         M_vv:np.array,
         rho:float,
         LR:float,
+        T:int,
         t:int
         ) -> tuple:
     
     '''
-    Optimize the local restriction maps
-    on a certain edge calling a subroutine performing a gradient based procedure. 
+    Optimize the local restriction maps through block coordinate descenton a certain edge calling a subroutine performing a gradient based procedure. 
 
     Parameters:
     - X_u (np.array): Signals on node u 
@@ -103,39 +103,44 @@ def local_proxies(
     - tuple: A tuple containing the two restriction maps on the edge of interest    
     '''
 
-    F_u = gradient_descent_U(X_u, X_v, 
-                             F_u_0, F_u_k, F_v_0, F_v_k, 
-                             L_uu, L_uv, 
-                             BB_uu, BB_uv, 
-                             M_uu, M_uv,
-                             rho, LR, t)
-    
-    F_v = gradient_descent_V(X_u, X_v, 
-                             F_u_0, F_u_k, F_v_0, F_v_k, 
-                             L_uv, L_vv, 
-                             BB_uv, BB_vv, 
-                             M_uv, M_vv,
-                             rho, LR, t)
+    # External initialization 
+
+    F_u = F_u_0
+    F_v = F_v_0
+
+    # These quantities in the gradients of the block losses are fixed
+
+    l_uu = - F_u_k.T @ F_u_k + BB_uu - L_uu + M_uu
+    l_vv = - F_v_k.T @ F_v_k + BB_vv - L_vv + M_vv
+    l_uv = + F_u_k.T @ F_v_k + BB_uv - L_uv + M_uv
+
+    # Block descent procedure
+
+    for _ in range(T):
+        for _ in range(t):
+            F_u = gradient_U(X_u, X_v, 
+                            F_u, F_v, 
+                            l_uu, l_uv,
+                            rho, LR)
+            
+        for _ in range(t):
+            F_v = gradient_V(X_u, X_v, 
+                            F_u, F_v, 
+                            l_vv, l_uv,
+                            rho, LR)
 
     return (F_u, F_v)
 
 
-def gradient_descent_U(
+def gradient_U(
         X_u:np.array,
         X_v:np.array,
-        F_u_0:np.array,
-        F_u_k:np.array,
-        F_v_0:np.array,
-        F_v_k:np.array,
-        L_uu:np.array,
-        L_uv:np.array,
-        BB_uu:np.array,
-        BB_uv:np.array,
-        M_uu:np.array,
-        M_uv:np.array,
+        F_u:np.array,
+        F_v:np.array,
+        l_uu:np.array,
+        l_uv:np.array,
         rho:float,
         LR:float,
-        t:int
         ) -> np.array:
     
     '''
@@ -144,61 +149,36 @@ def gradient_descent_U(
     Parameters:
     - X_u (np.array): Signals on node u 
     - X_v (np.array): Signals on node v
-    - F_u_0 (np.array): Initialization for map F_u
-    - F_u_k (np.array): Buffered previous iteration result for F_u
-    - F_v_0 (np.array): Initialization for map F_v
-    - F_v_k (np.array): Buffered previous iteration result for F_u
-    - L_uu (np.array): (u,u) block in the global variable for the sheaf laplacian 
-    - L_uv (np.array): (u,v) block in the global variable for the sheaf laplacian
-    - BB_uu (np.array): (u,u) block in the global aggregator for local to global messages
-    - BB_uv (np.array): (u,v) block in the global aggregator for local to global messages
-    - M_uu (np.array): (u,u) block in the shared multiplier 
-    - M_uv (np.array): (u,v) block in the shared multiplier  
+    - F_u (np.array): Current value for map F_u
+    - F_v (np.array): Current value for map F_v
+    - l_uu (np.array): Fixes term for block (u,u) in the augmentation term;
+    - l_uv (np.array): Fixes term for block (u,v) in the augmentation term;
     - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
     - LR (float): learning rate for the inner gradient descent subroutine
-    - t (int): max number of iterations for inner routine (gradient based)
 
     Returns:
     - np.array: The restriction map F_u  
     '''    
 
-    # External initialization 
+    l_uu_ = F_u.T @ F_u + l_uu
+    l_uv_ = - F_u.T @ F_v + l_uv
 
-    F_u = F_u_0
-    F_v = F_v_0
+    grad_u = ( (F_u @ X_u - F_v @ X_v) @ X_u.T               # Gradient of the loss on the local communication
+                + rho * (F_u @ l_uu_ - 2*F_v @ l_uv_) )      # Gradient of the block-wise losses
 
-    # This quantities in the gradients of the block losses are fixed
-     
-    l_uu = - F_u_k.T @ F_u_k + BB_uu - L_uu + M_uu
-    l_uv = + F_u_k.T @ F_v_k + BB_uv - L_uv + M_uv
-
-    for _ in range(t):
-        l_uu_ = F_u.T @ F_u + l_uu
-        l_uv_ = - F_u.T @ F_v + l_uv
-
-        grad_u = ( (F_u @ X_u - F_v @ X_v) @ X_u.T               # Gradient of the loss on the local communication
-                  + rho * (F_u @ l_uu_ - 2*F_v @ l_uv_) )        # Gradient of the block-wise losses
-
-        F_u -= LR * grad_u
+    F_u -= LR * grad_u
 
     return F_u
 
-def gradient_descent_V(
+def gradient_V(
         X_u:np.array,
         X_v:np.array,
-        F_u_0:np.array,
-        F_u_k:np.array,
-        F_v_0:np.array,
-        F_v_k:np.array,
-        L_uv:np.array,
-        L_vv:np.array,
-        BB_uv:np.array,
-        BB_vv:np.array,
-        M_uv:np.array,
-        M_vv:np.array,
+        F_u:np.array,
+        F_v:np.array,
+        l_vv:np.array,
+        l_uv:np.array,
         rho:float,
         LR:float,
-        t:int
         ) -> np.array:
     
     '''
@@ -207,43 +187,25 @@ def gradient_descent_V(
     Parameters:
     - X_u (np.array): Signals on node u 
     - X_v (np.array): Signals on node v
-    - F_u_0 (np.array): Initialization for map F_u
-    - F_u_k (np.array): Buffered previous iteration result for F_u
-    - F_v_0 (np.array): Initialization for map F_v
-    - F_v_k (np.array): Buffered previous iteration result for F_u
-    - L_uv (np.array): (u,v) block in the global variable for the sheaf laplacian 
-    - L_vv (np.array): (v,v) block in the global variable for the sheaf laplacian
-    - BB_uv (np.array): (u,v) block in the global aggregator for local to global messages
-    - BB_vv (np.array): (v,v) block in the global aggregator for local to global messages
-    - M_uv (np.array): (u,v) block in the shared multiplier 
-    - M_vv (np.array): (v,v) block in the shared multiplier  
+    - F_u (np.array): Current value for map F_u
+    - F_v (np.array): Current value for map F_v
+    - l_vv (np.array): Fixes term for block (v,v) in the augmentation term;
+    - l_uv (np.array): Fixes term for block (u,v) in the augmentation term;
     - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
     - LR (float): learning rate for the inner gradient descent subroutine
-    - t (int): max number of iterations for inner routine (gradient based)
 
     Returns:
     - np.array: The restriction map F_v
     '''    
 
-    # External initializations
+    l_vv_ = F_v.T @ F_v + l_vv
+    l_uv_ = - F_u.T @ F_v + l_uv
 
-    F_u = F_u_0
-    F_v = F_v_0
-
-    # These quantities in the gradients of the block losses are fixed
-
-    l_vv = - F_v_k.T @ F_v_k + BB_vv - L_vv + M_vv
-    l_uv = + F_u_k.T @ F_v_k + BB_uv - L_uv + M_uv
-
-    for _ in range(t):
-        l_vv_ = F_v.T @ F_v + l_vv
-        l_uv_ = - F_u.T @ F_v + l_uv
-
-        grad_v = ( - (F_u @ X_u - F_v @ X_v) @ X_v.T       # Gradient of the loss on the local communication
-                  + rho * (F_v @ l_vv_ - 2*F_u @ l_uv_) )  # Gradient of the block-wise losses
+    grad_v = ( - (F_u @ X_u - F_v @ X_v) @ X_v.T       # Gradient of the loss on the local communication
+                + rho * (F_v @ l_vv_ - 2*F_u @ l_uv_) )  # Gradient of the block-wise losses
                                                            
 
-        F_v -= LR * grad_v
+    F_v -= LR * grad_v
 
     return F_v
 
