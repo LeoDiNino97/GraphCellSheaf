@@ -9,6 +9,7 @@ def learning(
         LR:np.array,
         rho:float,
         lambda_:float,
+        gamma:float,
         T:int,
         t:int,
         max_iter:int
@@ -102,7 +103,7 @@ def learning(
                                          L_uu, L_uv, L_vv,
                                          BB_uu, BB_uv, BB_vv,
                                          M_uu, M_uv, M_vv,
-                                         rho, LR, T, t)
+                                         rho, gamma, LR, T, t)
 
             # Update local buffer
             buffer_A[e][u] = F_u

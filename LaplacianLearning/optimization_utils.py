@@ -72,12 +72,14 @@ def local_proxies(
         M_vv:np.array,
         rho:float,
         LR:float,
+        gamma:float,
         T:int,
         t:int
         ) -> tuple:
     
     '''
-    Optimize the local restriction maps through block coordinate descenton a certain edge calling a subroutine performing a gradient based procedure. 
+    Optimize the local restriction maps through successive convex approximation on 
+    a certain edge calling a subroutine performing a gradient based procedure. 
 
     Parameters:
     - X_u (np.array): Signals on node u 
@@ -97,6 +99,8 @@ def local_proxies(
     - M_vv (np.array): (v,v) block in the shared multiplier 
     - rho (float): coefficient of the augmentation term in the Lagrangian equation of the problem 
     - LR (float): learning rate for the inner gradient descent subroutine
+    - gamma (float): learning rate for the convex smoothing within the SCA routine
+    - T (int): max number of iterations for the outer routine (SCA)
     - t (int): max number of iterations for inner routine (gradient based)
 
     Returns:
@@ -118,17 +122,22 @@ def local_proxies(
 
     for _ in range(T):
         for _ in range(t):
-            F_u = gradient_U(X_u, X_v, 
+            F_u_hat = gradient_U(X_u, X_v, 
                             F_u, F_v, 
                             l_uu, l_uv,
                             rho, LR)
             
         for _ in range(t):
-            F_v = gradient_V(X_u, X_v, 
+            F_v_hat = gradient_V(X_u, X_v, 
                             F_u, F_v, 
                             l_vv, l_uv,
                             rho, LR)
 
+        F_u += gamma*(F_u_hat - F_u)
+        F_v += gamma*(F_v_hat - F_v)
+
+        gamma *= 0.9
+        
     return (F_u, F_v)
 
 
