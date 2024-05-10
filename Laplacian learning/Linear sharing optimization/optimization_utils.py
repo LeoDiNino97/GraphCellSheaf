@@ -1,5 +1,6 @@
 import numpy as np 
 from itertools import combinations
+import cvxpy as cp
 
 def initialization(
         V:int,
@@ -85,6 +86,27 @@ def local_updates(
 #__________________________________________________________________________________________
 #_________________________________CENTRAL AGGREGATION______________________________________
 #___________________________________________________________________________________________
+
+def global_update_L_CVXPY(
+        mu:float,
+        lambda_:float,
+        rho:float,
+        E:int,
+        BB:np.array,
+        M:np.array
+        ) -> np.array:
+    
+    n = BB.shape[0]
+    L = cp.Variable((n, n))
+
+    objective = -lambda_ * cp.log(cp.trace(L)) + \
+            mu * E**2 * cp.norm(L, 'fro')**2 + \
+            (rho * E / 2) * cp.norm(L - (BB + M), 'fro')**2
+    
+    problem = cp.Problem(cp.Minimize(objective))
+    problem.solve(solver=cp.SCS)
+    return L.value
+
 
 def global_update_L(
         mu:float,
