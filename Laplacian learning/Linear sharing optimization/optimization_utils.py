@@ -73,7 +73,9 @@ def local_updates(
     '''
     u = edge[0]
     v = edge[1]
+
     X_ = np.zeros_like(X)
+
     X_[u*d:(u+1)*d,:] = X[u*d:(u+1)*d,:]
     X_[v*d:(v+1)*d,:] = X[v*d:(v+1)*d,:]
 
@@ -85,6 +87,7 @@ def local_updates(
 #___________________________________________________________________________________________
 
 def global_update_L(
+        mu:float,
         lambda_:float,
         rho:float,
         E:int,
@@ -105,6 +108,14 @@ def global_update_L(
     Returns:
     - np.array: globally updated sheaf laplacian
     '''
+    
+    # Computing the mu coefficient
+
+    mu = mu * E / rho
+
+    # Computing the gamma coefficient
+
+    gamma = lambda_/(rho*E)
 
     # Computing the eigendecomposition of the term to be proximalized
 
@@ -112,7 +123,7 @@ def global_update_L(
 
     # Computing the eigenvalues of the proximal operator
 
-    z = 0.5*(s + np.sqrt(s**2 + 4*lambda_/(rho*E)))
+    z = 1/(2*(2*mu*gamma + 1))*(s + np.sqrt(s**2 + 4*gamma*(2*gamma*mu + 1)))
 
     # Rebuilding the proximal operator
 

@@ -8,6 +8,7 @@ def learning(
         X:np.array,
         rho:float,
         lambda_:float,
+        mu:float,
         max_iter:int
     ):
     
@@ -81,7 +82,7 @@ def learning(
 
         # Central updates
         BB_ /= E
-        L = opt.global_update_L(lambda_, rho, E, BB_, M)
+        L = opt.global_update_L(mu, lambda_, rho, E, BB_, M)
         M = opt.global_update_M(M, BB_, L)
 
         # Send the messages from the central aggregator to local agents
