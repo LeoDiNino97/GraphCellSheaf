@@ -36,7 +36,7 @@ def learning(
     # Every local agent has its own buffer for receiving global messages
 
     buffer_B = {
-        e: (np.eye(d*V),np.eye(d*V))
+        e: (np.ones(d*V),np.ones(d*V))
         for e in edges
     }
 
@@ -61,6 +61,7 @@ def learning(
             BB = buffer_A[e]
             L_hat = buffer_B[e][1]
             BB_hat = buffer_B[e][0]
+
             BB_e = opt.local_updates(e, d, X, L_hat, BB, BB_hat, M, rho)
 
             # Update local buffer
